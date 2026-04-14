@@ -1,0 +1,1 @@
+# company-highlighter-browser-extension
