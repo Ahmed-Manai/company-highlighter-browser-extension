@@ -1,19 +1,19 @@
 {
   "manifest_version": 3,
-  "name": "LinkedIn Company Highlighter",
+  "name": "Company Highlighter",
   "version": "1.0",
-  "description": "Highlights company names on LinkedIn pages",
+  "description": "Highlights company names on any website",
   "permissions": [],
-  "host_permissions": ["https://www.linkedin.com/*"],
+  "host_permissions": ["<all_urls>"],
   "web_accessible_resources": [
     {
       "resources": ["companies.txt"],
-      "matches": ["https://www.linkedin.com/*"]
+      "matches": ["<all_urls>"]
     }
   ],
   "content_scripts": [
     {
-      "matches": ["https://www.linkedin.com/*"],
+      "matches": ["<all_urls>"],
       "js": ["content.js"],
       "css": ["styles.css"],
       "run_at": "document_idle"
