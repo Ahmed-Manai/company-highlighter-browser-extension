@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "LinkedIn Company Highlighter",
+  "version": "1.0",
+  "description": "Highlights company names on LinkedIn pages",
+  "permissions": [],
+  "host_permissions": ["https://www.linkedin.com/*"],
+  "web_accessible_resources": [
+    {
+      "resources": ["companies.txt"],
+      "matches": ["https://www.linkedin.com/*"]
+    }
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://www.linkedin.com/*"],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
