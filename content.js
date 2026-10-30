@@ -1,17 +1,30 @@
 let companySet = new Set();
 
-// Load company list
+// Elements whose text must never be modified
+const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA", "SVG"]);
+
+// Load company list (one name per line) bundled with the extension
 async function loadCompanies() {
-  const response = await fetch(chrome.runtime.getURL("companies.txt"));
-  const text = await response.text();
+  try {
+    const response = await fetch(chrome.runtime.getURL("companies.txt"));
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const text = await response.text();
 
-  companySet = new Set(
-    text.split("\n")
-      .map(c => c.trim().toLowerCase())
-      .filter(Boolean)
-  );
+    companySet = new Set(
+      text.split("\n")
+        .map(c => c.trim().toLowerCase())
+        .filter(Boolean)
+    );
 
-  console.log("Loaded companies:", companySet.size);
+    console.log("Company Highlighter: loaded companies:", companySet.size);
+  } catch (err) {
+    console.warn(
+      "Company Highlighter: could not load companies.txt. " +
+      "Create it in the extension folder (see README).",
+      err
+    );
+    companySet = new Set();
+  }
 }
 
 // Escape regex safely
@@ -19,12 +32,12 @@ function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-// Build ONE regex instead of 13k loops (critical optimization)
-let regex = null;
-
+// Build a few large regexes instead of looping over every name (critical optimization).
+// Longer names come first so "Acme Labs" wins over "Acme".
+// Boundaries use letter/number lookarounds so names like "C++" or "AT&T" still match.
 function buildRegex() {
   const chunkSize = 500; // avoid huge regex crash
-  const companies = Array.from(companySet);
+  const companies = Array.from(companySet).sort((a, b) => b.length - a.length);
 
   const chunks = [];
   for (let i = 0; i < companies.length; i += chunkSize) {
@@ -32,7 +45,7 @@ function buildRegex() {
       .map(escapeRegex)
       .join("|");
 
-    chunks.push(new RegExp(`\\b(${chunk})\\b`, "gi"));
+    chunks.push(new RegExp(`(?<![\\p{L}\\p{N}_])(?:${chunk})(?![\\p{L}\\p{N}_])`, "giu"));
   }
 
   return chunks;
@@ -40,47 +53,71 @@ function buildRegex() {
 
 let regexChunks = [];
 
+// Find non-overlapping matches across all regex chunks (earliest first, then longest)
+function findMatches(text) {
+  const matches = [];
+
+  regexChunks.forEach(regex => {
+    regex.lastIndex = 0;
+    let m;
+    while ((m = regex.exec(text)) !== null) {
+      matches.push({ start: m.index, end: m.index + m[0].length });
+    }
+  });
+
+  matches.sort((a, b) => a.start - b.start || b.end - a.end);
+
+  const result = [];
+  let lastEnd = 0;
+  for (const match of matches) {
+    if (match.start >= lastEnd) {
+      result.push(match);
+      lastEnd = match.end;
+    }
+  }
+  return result;
+}
+
+function shouldSkipElement(el) {
+  return (
+    SKIP_TAGS.has(el.tagName.toUpperCase()) ||
+    el.isContentEditable ||
+    (el.classList && el.classList.contains("company-highlight"))
+  );
+}
+
 // Highlight text nodes
 function highlight(node) {
   if (!node) return;
 
-  // ❗ Skip if already highlighted
-  if (
-    node.nodeType === 1 &&
-    node.classList &&
-    node.classList.contains("company-highlight")
-  ) {
-    return;
-  }
+  if (node.nodeType === Node.TEXT_NODE) {
+    const text = node.nodeValue;
+    const matches = findMatches(text);
+    if (matches.length === 0) return;
 
-  if (node.nodeType === 3) {
-    let text = node.nodeValue;
+    // Build DOM nodes directly (never innerHTML) so page text cannot inject markup
+    const fragment = document.createDocumentFragment();
+    let cursor = 0;
 
-    let matched = false;
-    regexChunks.forEach(regex => {
-      if (regex.test(text)) matched = true;
+    matches.forEach(({ start, end }) => {
+      if (start > cursor) {
+        fragment.appendChild(document.createTextNode(text.slice(cursor, start)));
+      }
+      const span = document.createElement("span");
+      span.className = "company-highlight";
+      span.textContent = text.slice(start, end);
+      fragment.appendChild(span);
+      cursor = end;
     });
 
-    if (!matched) return;
+    if (cursor < text.length) {
+      fragment.appendChild(document.createTextNode(text.slice(cursor)));
+    }
 
-    const span = document.createElement("span");
-
-    let newHTML = text;
-
-    regexChunks.forEach(regex => {
-      newHTML = newHTML.replace(regex, match =>
-        `<span class="company-highlight">${match}</span>`
-      );
-    });
-
-    span.innerHTML = newHTML;
-    node.replaceWith(span);
-
-  } else if (
-    node.nodeType === 1 &&
-    !["SCRIPT", "STYLE", "NOSCRIPT"].includes(node.tagName)
-  ) {
-    node.childNodes.forEach(child => highlight(child));
+    node.replaceWith(fragment);
+  } else if (node.nodeType === Node.ELEMENT_NODE && !shouldSkipElement(node)) {
+    // Copy the list first: highlighting replaces child nodes while we iterate
+    Array.from(node.childNodes).forEach(child => highlight(child));
   }
 }
 
@@ -94,7 +131,7 @@ function runHighlight() {
   }, 500);
 }
 
-// Observe dynamic changes (LinkedIn infinite scroll)
+// Observe dynamic changes (e.g. infinite scroll)
 function observeDOM() {
   const observer = new MutationObserver(runHighlight);
 
@@ -107,6 +144,8 @@ function observeDOM() {
 // Init
 (async function () {
   await loadCompanies();
+  if (companySet.size === 0) return;
+
   regexChunks = buildRegex();
 
   runHighlight();
