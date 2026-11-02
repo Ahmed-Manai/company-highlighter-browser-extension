@@ -40,7 +40,7 @@ Highlights company names from a user-provided list on web pages.
 ## Data usage (Chrome)
 Does not collect or use any user data. Privacy policy: https://github.com/Ahmed-Manai/company-highlighter-browser-extension/blob/main/PRIVACY.md
 
-## Assets still needed
-- Screenshots (1280x800 or 640x400): a job board with highlights, the popup, the settings page
-- Small promo tile (440x280), optional
+## Assets
+- Screenshots (1280x800): `docs/screenshot-highlights.png`, `docs/screenshot-settings.png`
 - Store icon: `icons/icon-128.png`
+- Still optional: a small promo tile (440x280)

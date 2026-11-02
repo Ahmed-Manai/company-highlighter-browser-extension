@@ -8,6 +8,17 @@ A lightweight browser extension that highlights the companies from **your own li
 
 Useful when scanning job boards, LinkedIn feeds, news or search results for the companies you care about: target employers, clients, competitors, or companies you want to avoid.
 
+![Company names from the list highlighted on a job board](docs/screenshot-highlights.png)
+
+<details>
+<summary>Settings page</summary>
+
+![Settings page with the company list, colour picker and on/off switch](docs/screenshot-settings.png)
+
+</details>
+
+**[Download the latest release](https://github.com/Ahmed-Manai/company-highlighter-browser-extension/releases/latest)** · If it saves you time, a ⭐ helps others find it.
+
 ## Features
 
 - **Your list, in the browser:** paste names, or import and export a `.txt` file, from the settings page. No files to edit.
