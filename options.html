@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Company Highlighter settings</title>
+  <link rel="stylesheet" href="ui.css">
+</head>
+<body class="page">
+  <header>
+    <img src="icons/icon-48.png" width="32" height="32" alt="">
+    <h1>Company Highlighter</h1>
+  </header>
+
+  <section class="card">
+    <label class="row">
+      <input type="checkbox" id="enabled">
+      <span>Highlight companies on web pages</span>
+    </label>
+    <label class="row">
+      <input type="color" id="color">
+      <span>Highlight colour</span>
+    </label>
+  </section>
+
+  <section class="card">
+    <div class="row spread">
+      <h2>Companies</h2>
+      <span id="count" class="muted"></span>
+    </div>
+    <p class="muted">One company per line. Matching ignores case. Lines starting with <code>#</code> are ignored.</p>
+    <textarea id="companies" rows="16" spellcheck="false" placeholder="Acme Corp&#10;Globex&#10;Initech"></textarea>
+    <div class="row">
+      <button id="save" class="primary">Save</button>
+      <button id="import">Import .txt</button>
+      <button id="export">Export .txt</button>
+      <input type="file" id="importFile" accept=".txt,text/plain" hidden>
+      <span id="status" class="muted" role="status"></span>
+    </div>
+  </section>
+
+  <p class="muted small">Your list is stored only in this browser. The extension never sends it anywhere.</p>
+
+  <script src="matcher.js"></script>
+  <script src="settings.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

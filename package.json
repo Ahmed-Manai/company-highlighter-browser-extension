@@ -1,0 +1,13 @@
+{
+  "name": "company-highlighter-browser-extension",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Browser extension that highlights company names from your own list on any web page",
+  "scripts": {
+    "test": "node --test \"test/*.test.js\"",
+    "icons": "python scripts/generate_icons.py"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.1"
+  }
+}

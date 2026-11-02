@@ -4,25 +4,26 @@ Thanks for helping improve Company Highlighter.
 
 ## Reporting bugs and requesting features
 
-Open an issue using the **Bug report** or **Feature request** template. For bugs, include the browser version, the page (if public) and the minimal `companies.txt` lines that reproduce the problem.
+Open an issue using the **Bug report** or **Feature request** template. For bugs, include the browser version, the page (if public) and the minimal list entries that reproduce the problem.
 
 ## Development setup
 
 There is no build step: the extension is plain JavaScript and CSS.
 
 1. Fork and clone the repository.
-2. `cp companies.example.txt companies.txt` and add a few test names.
-3. Load the folder as an unpacked extension (see the README for Chrome, Edge and Firefox).
+2. Run `npm install` once (it only installs the test dependencies).
+3. Load the folder as an unpacked extension (see the README for Chrome, Edge and Firefox), and add a few test names on the settings page.
 4. After each change, click reload on the extensions page and refresh the test tab.
+5. Run `npm test` before opening a pull request. Matching logic lives in `matcher.js` and has unit tests; page behaviour is tested in `test/content.test.js` with jsdom.
 
-Use the page's developer console to see `Company Highlighter:` log messages and errors.
+Use the page's developer console to see errors from the content script.
 
 ## Guidelines
 
 - Keep the extension dependency-free and permission-light. Do not add permissions unless they are required, and document any new one in the README's Permissions section.
 - Never insert page text with `innerHTML`; build DOM nodes so page content cannot inject markup.
 - Keep performance in mind: the content script runs on every page and on every DOM change.
-- Do not commit your personal `companies.txt` (it is ignored by Git). Update `companies.example.txt` only with generic examples.
+- Update `companies.example.txt` only with generic examples.
 - Test in at least one Chromium browser; test Firefox when touching `manifest.json`.
 
 ## Pull requests

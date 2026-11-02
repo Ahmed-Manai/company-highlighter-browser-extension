@@ -1,88 +1,28 @@
-let companySet = new Set();
+// Relies on matcher.js and settings.js, which the manifest loads first.
+
+const HIGHLIGHT_CLASS = "company-highlight";
+const STYLE_ID = "company-highlighter-style";
 
 // Elements whose text must never be modified
 const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA", "SVG"]);
 
-// Load company list (one name per line) bundled with the extension
-async function loadCompanies() {
-  try {
-    const response = await fetch(chrome.runtime.getURL("companies.txt"));
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const text = await response.text();
-
-    companySet = new Set(
-      text.split("\n")
-        .map(c => c.trim().toLowerCase())
-        .filter(Boolean)
-    );
-
-    console.log("Company Highlighter: loaded companies:", companySet.size);
-  } catch (err) {
-    console.warn(
-      "Company Highlighter: could not load companies.txt. " +
-      "Create it in the extension folder (see README).",
-      err
-    );
-    companySet = new Set();
-  }
-}
-
-// Escape regex safely
-function escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-// Build a few large regexes instead of looping over every name (critical optimization).
-// Longer names come first so "Acme Labs" wins over "Acme".
-// Boundaries use letter/number lookarounds so names like "C++" or "AT&T" still match.
-function buildRegex() {
-  const chunkSize = 500; // avoid huge regex crash
-  const companies = Array.from(companySet).sort((a, b) => b.length - a.length);
-
-  const chunks = [];
-  for (let i = 0; i < companies.length; i += chunkSize) {
-    const chunk = companies.slice(i, i + chunkSize)
-      .map(escapeRegex)
-      .join("|");
-
-    chunks.push(new RegExp(`(?<![\\p{L}\\p{N}_])(?:${chunk})(?![\\p{L}\\p{N}_])`, "giu"));
-  }
-
-  return chunks;
-}
-
 let regexChunks = [];
+let observer = null;
+let timeout = null;
 
-// Find non-overlapping matches across all regex chunks (earliest first, then longest)
-function findMatches(text) {
-  const matches = [];
-
-  regexChunks.forEach(regex => {
-    regex.lastIndex = 0;
-    let m;
-    while ((m = regex.exec(text)) !== null) {
-      matches.push({ start: m.index, end: m.index + m[0].length });
-    }
-  });
-
-  matches.sort((a, b) => a.start - b.start || b.end - a.end);
-
-  const result = [];
-  let lastEnd = 0;
-  for (const match of matches) {
-    if (match.start >= lastEnd) {
-      result.push(match);
-      lastEnd = match.end;
-    }
-  }
-  return result;
+function isEditable(el) {
+  if (el.isContentEditable) return true;
+  // Fallback for environments without isContentEditable; the walk is top-down,
+  // so skipping the element that sets the attribute also skips its children
+  const value = el.getAttribute("contenteditable");
+  return value !== null && value.toLowerCase() !== "false";
 }
 
 function shouldSkipElement(el) {
   return (
     SKIP_TAGS.has(el.tagName.toUpperCase()) ||
-    el.isContentEditable ||
-    (el.classList && el.classList.contains("company-highlight"))
+    isEditable(el) ||
+    (el.classList && el.classList.contains(HIGHLIGHT_CLASS))
   );
 }
 
@@ -92,7 +32,7 @@ function highlight(node) {
 
   if (node.nodeType === Node.TEXT_NODE) {
     const text = node.nodeValue;
-    const matches = findMatches(text);
+    const matches = findMatches(text, regexChunks);
     if (matches.length === 0) return;
 
     // Build DOM nodes directly (never innerHTML) so page text cannot inject markup
@@ -104,7 +44,7 @@ function highlight(node) {
         fragment.appendChild(document.createTextNode(text.slice(cursor, start)));
       }
       const span = document.createElement("span");
-      span.className = "company-highlight";
+      span.className = HIGHLIGHT_CLASS;
       span.textContent = text.slice(start, end);
       fragment.appendChild(span);
       cursor = end;
@@ -121,33 +61,88 @@ function highlight(node) {
   }
 }
 
-// Debounce to avoid overload
-let timeout = null;
+// Put the original text back, e.g. when the extension is switched off or the list changes
+function removeHighlights() {
+  document.querySelectorAll(`span.${HIGHLIGHT_CLASS}`).forEach(span => {
+    const parent = span.parentNode;
+    span.replaceWith(document.createTextNode(span.textContent));
+    parent.normalize();
+  });
+}
 
+function countHighlights() {
+  return document.querySelectorAll(`span.${HIGHLIGHT_CLASS}`).length;
+}
+
+function reportCount() {
+  chrome.runtime.sendMessage({ type: "count", count: countHighlights() }).catch(() => {
+    // The background worker may be restarting; the next run reports again.
+  });
+}
+
+function applyColor(color) {
+  // Only accept #rrggbb so a stored value can never inject CSS into the page
+  if (!/^#[0-9a-f]{6}$/i.test(color)) color = DEFAULT_SETTINGS.color;
+  let style = document.getElementById(STYLE_ID);
+  if (!style) {
+    style = document.createElement("style");
+    style.id = STYLE_ID;
+    (document.head || document.documentElement).appendChild(style);
+  }
+  style.textContent = `span.${HIGHLIGHT_CLASS} { background-color: ${color}; }`;
+}
+
+// Debounce to avoid overload
 function runHighlight() {
   clearTimeout(timeout);
   timeout = setTimeout(() => {
     highlight(document.body);
+    reportCount();
   }, 500);
 }
 
-// Observe dynamic changes (e.g. infinite scroll)
-function observeDOM() {
-  const observer = new MutationObserver(runHighlight);
-
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
-  });
+function start() {
+  runHighlight();
+  if (!observer) {
+    // Observe dynamic changes (e.g. infinite scroll)
+    observer = new MutationObserver(runHighlight);
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
 }
 
-// Init
-(async function () {
-  await loadCompanies();
-  if (companySet.size === 0) return;
+function stop() {
+  clearTimeout(timeout);
+  if (observer) {
+    observer.disconnect();
+    observer = null;
+  }
+  removeHighlights();
+  reportCount();
+}
 
-  regexChunks = buildRegex();
+async function refresh() {
+  const settings = await loadSettings();
+  stop();
+  regexChunks = buildRegexChunks(settings.companies);
+  applyColor(settings.color);
+  if (settings.enabled && regexChunks.length > 0) {
+    start();
+  }
+}
 
-  runHighlight();
-  observeDOM();
-})();
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== "local") return;
+  if (changes.companies || changes.enabled) {
+    refresh();
+  } else if (changes.color) {
+    applyColor(changes.color.newValue);
+  }
+});
+
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message && message.type === "getCount") {
+    sendResponse({ count: countHighlights() });
+  }
+});
+
+refresh();

@@ -18,7 +18,7 @@ A clear description of what went wrong.
 What you expected to be highlighted (or not).
 
 **Company names involved**
-The relevant lines from `companies.txt` (only the ones needed to reproduce).
+The relevant entries from your company list (only the ones needed to reproduce).
 
 **Environment**
 - Browser and version: (e.g. Chrome 130, Edge 130, Firefox 132)

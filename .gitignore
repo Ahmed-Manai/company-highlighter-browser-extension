@@ -1,2 +1,6 @@
 # Your personal company list (copy companies.example.txt to start)
 companies.txt
+
+# Dependencies and build output
+node_modules/
+dist/

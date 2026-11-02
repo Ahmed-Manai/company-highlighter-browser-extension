@@ -1,20 +1,46 @@
 {
   "manifest_version": 3,
   "name": "Company Highlighter",
-  "version": "1.0",
-  "description": "Highlights company names on any website",
-  "web_accessible_resources": [
-    {
-      "resources": ["companies.txt"],
-      "matches": ["<all_urls>"]
+  "version": "1.0.0",
+  "description": "Highlights the companies from your own list on any web page. Your list stays in your browser.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "permissions": ["storage"],
+  "background": {
+    "service_worker": "background.js",
+    "scripts": ["matcher.js", "settings.js", "background.js"]
+  },
+  "action": {
+    "default_title": "Company Highlighter",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png"
     }
-  ],
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "js": ["matcher.js", "settings.js", "content.js"],
       "css": ["styles.css"],
       "run_at": "document_idle"
     }
-  ]
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "company-highlighter@ahmed-manai",
+      "strict_min_version": "121.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  }
 }
