@@ -50,6 +50,14 @@ importFile.addEventListener("change", async () => {
   showStatus(`Imported ${imported.length}. Click Save to keep them.`);
 });
 
+document.getElementById("clear").addEventListener("click", async () => {
+  if (!confirm("Clear your company list?")) return;
+  await saveSettings({ companies: [] });
+  companiesInput.value = "";
+  updateCount();
+  showStatus("Cleared");
+});
+
 document.getElementById("export").addEventListener("click", () => {
   const text = parseCompanyList(companiesInput.value).join("\n") + "\n";
   const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
