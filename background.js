@@ -38,3 +38,11 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
     chrome.runtime.openOptionsPage();
   }
 });
+
+// Toggle highlighting via keyboard shortcut
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command === "toggle-highlight") {
+    const settings = await loadSettings();
+    await saveSettings({ enabled: !settings.enabled });
+  }
+});

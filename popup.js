@@ -23,6 +23,13 @@ async function init() {
   const n = settings.companies.length;
   listSizeLabel.textContent = n === 1 ? "1 company in your list" : `${n} companies in your list`;
   showMatchCount(settings.enabled);
+  chrome.commands.getAll((commands) => {
+    const cmd = commands.find(c => c.name === "toggle-highlight");
+    if (cmd && cmd.shortcut) {
+      const shortcutEl = document.querySelector("kbd");
+      if (shortcutEl) shortcutEl.textContent = cmd.shortcut;
+    }
+  });
 }
 
 enabledInput.addEventListener("change", async () => {
