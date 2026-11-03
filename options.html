@@ -38,6 +38,18 @@
     </div>
   </section>
 
+  <section class="card">
+    <div class="row spread">
+      <h2>Excluded sites</h2>
+    </div>
+    <p class="muted">One hostname per line. Highlighting will be disabled on these sites and their subdomains. Lines starting with <code>#</code> are ignored.</p>
+    <textarea id="excludedSites" rows="6" spellcheck="false" placeholder="example.com&#10;internal.corp"></textarea>
+    <div class="row">
+      <button id="saveExcluded" class="primary">Save excluded sites</button>
+      <span id="excludedStatus" class="muted" role="status"></span>
+    </div>
+  </section>
+
   <p class="muted small">Your list is stored only in this browser. The extension never sends it anywhere.</p>
 
   <script src="matcher.js"></script>
