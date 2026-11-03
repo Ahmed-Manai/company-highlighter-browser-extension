@@ -43,8 +43,11 @@ function fakeChrome(initial) {
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-async function loadPage(html, settings) {
-  const dom = new JSDOM(`<!DOCTYPE html><body>${html}</body>`, { runScripts: "dangerously" });
+async function loadPage(html, settings, url = "https://example.com/page") {
+  const dom = new JSDOM(`<!DOCTYPE html><body>${html}</body>`, {
+    url,
+    runScripts: "dangerously"
+  });
   const chrome = fakeChrome(settings);
   dom.window.chrome = chrome;
   // Run each file as a classic script, like the browser does, so top-level
@@ -130,4 +133,53 @@ test("answers the popup's match count request", async () => {
   let response;
   chrome.messageListeners.forEach(listener => listener({ type: "getCount" }, {}, r => { response = r; }));
   assert.deepEqual(plain(response), { count: 3 });
+});
+
+test("does not highlight when the site is excluded", async () => {
+  const { document } = await loadPage(
+    "<p>Acme is here</p>",
+    { companies: ["Acme"], excludedSites: ["example.com"] },
+    "https://example.com/test"
+  );
+  assert.deepEqual(highlights(document), []);
+});
+
+test("does not highlight on subdomains of excluded sites", async () => {
+  const { document } = await loadPage(
+    "<p>Acme is here</p>",
+    { companies: ["Acme"], excludedSites: ["example.com"] },
+    "https://sub.example.com/test"
+  );
+  assert.deepEqual(highlights(document), []);
+});
+
+test("dynamically adding an excluded site stops highlighting and clears spans without reload", async () => {
+  const { document, chrome } = await loadPage(
+    "<p>Acme is here</p>",
+    { companies: ["Acme"], excludedSites: [] },
+    "https://example.com/test"
+  );
+  assert.deepEqual(highlights(document), ["Acme"]);
+
+  await chrome.storage.local.set({ excludedSites: ["example.com"] });
+  await wait(100);
+
+  assert.deepEqual(highlights(document), []);
+  assert.equal(document.querySelector("p").textContent, "Acme is here");
+  assert.deepEqual(plain(chrome.sent.at(-1)), { type: "count", count: 0 });
+});
+
+test("dynamically removing an excluded site resumes highlighting without reload", async () => {
+  const { document, chrome } = await loadPage(
+    "<p>Acme is here</p>",
+    { companies: ["Acme"], excludedSites: ["example.com"] },
+    "https://example.com/test"
+  );
+  assert.deepEqual(highlights(document), []);
+
+  await chrome.storage.local.set({ excludedSites: [] });
+  await wait(700);
+
+  assert.deepEqual(highlights(document), ["Acme"]);
+  assert.deepEqual(plain(chrome.sent.at(-1)), { type: "count", count: 1 });
 });

@@ -2,6 +2,7 @@
 // company lists can be large, and nothing ever leaves the browser.
 const DEFAULT_SETTINGS = {
   companies: [],
+  excludedSites: [],
   enabled: true,
   color: "#ffeb3b"
 };
