@@ -9,10 +9,16 @@
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
   },
-  "permissions": ["storage"],
+  "permissions": [
+    "storage"
+  ],
   "background": {
     "service_worker": "background.js",
-    "scripts": ["matcher.js", "settings.js", "background.js"]
+    "scripts": [
+      "matcher.js",
+      "settings.js",
+      "background.js"
+    ]
   },
   "action": {
     "default_title": "Company Highlighter",
@@ -28,9 +34,17 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["matcher.js", "settings.js", "content.js"],
-      "css": ["styles.css"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "matcher.js",
+        "settings.js",
+        "content.js"
+      ],
+      "css": [
+        "styles.css"
+      ],
       "run_at": "document_idle"
     }
   ],
@@ -39,8 +53,19 @@
       "id": "company-highlighter@ahmed-manai",
       "strict_min_version": "121.0",
       "data_collection_permissions": {
-        "required": ["none"]
+        "required": [
+          "none"
+        ]
       }
+    }
+  },
+  "commands": {
+    "toggle-highlight": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+H",
+        "mac": "Command+Shift+H"
+      },
+      "description": "Toggle company highlighting on or off"
     }
   }
 }
