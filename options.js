@@ -4,11 +4,20 @@ const companiesInput = document.getElementById("companies");
 const countLabel = document.getElementById("count");
 const statusLabel = document.getElementById("status");
 const importFile = document.getElementById("importFile");
+const excludedSitesInput = document.getElementById("excludedSites");
+const excludedStatusLabel = document.getElementById("excludedStatus");
 
 function showStatus(text) {
   statusLabel.textContent = text;
   setTimeout(() => {
     if (statusLabel.textContent === text) statusLabel.textContent = "";
+  }, 2500);
+}
+
+function showExcludedStatus(text) {
+  excludedStatusLabel.textContent = text;
+  setTimeout(() => {
+    if (excludedStatusLabel.textContent === text) excludedStatusLabel.textContent = "";
   }, 2500);
 }
 
@@ -22,6 +31,7 @@ async function init() {
   enabledInput.checked = settings.enabled;
   colorInput.value = settings.color;
   companiesInput.value = settings.companies.join("\n");
+  excludedSitesInput.value = (settings.excludedSites || []).join("\n");
   updateCount();
 }
 
@@ -35,6 +45,13 @@ document.getElementById("save").addEventListener("click", async () => {
   companiesInput.value = companies.join("\n");
   updateCount();
   showStatus("Saved");
+});
+
+document.getElementById("saveExcluded").addEventListener("click", async () => {
+  const excludedSites = parseExcludedSites(excludedSitesInput.value);
+  await saveSettings({ excludedSites });
+  excludedSitesInput.value = excludedSites.join("\n");
+  showExcludedStatus("Saved");
 });
 
 document.getElementById("import").addEventListener("click", () => importFile.click());

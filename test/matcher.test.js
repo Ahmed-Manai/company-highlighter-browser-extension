@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { parseCompanyList, buildRegexChunks, findMatches } = require("../matcher.js");
+const { parseCompanyList, parseExcludedSites, isSiteExcluded, buildRegexChunks, findMatches } = require("../matcher.js");
 
 function matchedText(text, companies, chunkSize) {
   const chunks = buildRegexChunks(companies, chunkSize);
@@ -46,4 +46,82 @@ test("lists larger than one regex chunk still match", () => {
 
 test("an empty list produces no regexes", () => {
   assert.deepEqual(buildRegexChunks([]), []);
+});
+
+test("parseExcludedSites trims, skips blanks and comments, and de-duplicates case-insensitively", () => {
+  const input = "  example.com \r\n\n# ignore comment\nEXAMPLE.COM\n  github.com  \n";
+  assert.deepEqual(parseExcludedSites(input), ["example.com", "github.com"]);
+});
+
+test("parseExcludedSites handles empty and undefined input", () => {
+  assert.deepEqual(parseExcludedSites(""), []);
+  assert.deepEqual(parseExcludedSites(undefined), []);
+  assert.deepEqual(parseExcludedSites("   \n\n# comment\n"), []);
+});
+
+test("parseExcludedSites normalizes URLs and strips protocols, paths, query params and ports", () => {
+  const input = [
+    "https://example.com/some/path?query=1#hash",
+    "http://sub.example.com:8080/index.html",
+    "//cdn.example.org/asset.js",
+    "developer.mozilla.org/en-US/docs",
+    "localhost:3000/dashboard"
+  ].join("\n");
+
+  assert.deepEqual(parseExcludedSites(input), [
+    "example.com",
+    "sub.example.com",
+    "cdn.example.org",
+    "developer.mozilla.org",
+    "localhost"
+  ]);
+});
+
+test("parseExcludedSites rejects invalid hostnames", () => {
+  const input = [
+    "invalid hostname with spaces",
+    "http://",
+    "....",
+    "-startwithdash.com",
+    "endswithdash-.com",
+    "example..com",
+    "valid-site.com"
+  ].join("\n");
+
+  assert.deepEqual(parseExcludedSites(input), ["valid-site.com"]);
+});
+
+test("isSiteExcluded correctly matches exact hostnames and subdomains", () => {
+  const excluded = ["example.com", "my-org.co.uk"];
+
+  // Exact hostname match
+  assert.equal(isSiteExcluded("example.com", excluded), true);
+  // Subdomain match
+  assert.equal(isSiteExcluded("www.example.com", excluded), true);
+  // Nested subdomain match
+  assert.equal(isSiteExcluded("docs.dev.example.com", excluded), true);
+  // Multi-label TLD match & subdomain
+  assert.equal(isSiteExcluded("my-org.co.uk", excluded), true);
+  assert.equal(isSiteExcluded("app.my-org.co.uk", excluded), true);
+
+  // Case normalization
+  assert.equal(isSiteExcluded("WWW.EXAMPLE.COM", excluded), true);
+  assert.equal(isSiteExcluded("Example.Com", excluded), true);
+  assert.equal(isSiteExcluded("example.com", ["EXAMPLE.COM"]), true);
+
+  // Non-match
+  assert.equal(isSiteExcluded("example.org", excluded), false);
+
+  // Similar but unrelated hostname (must not match without dot boundary)
+  assert.equal(isSiteExcluded("notexample.com", excluded), false);
+  assert.equal(isSiteExcluded("badexample.com", excluded), false);
+  assert.equal(isSiteExcluded("example.com.evil.com", excluded), false);
+
+  // Empty excluded list
+  assert.equal(isSiteExcluded("example.com", []), false);
+  assert.equal(isSiteExcluded("example.com", undefined), false);
+
+  // Trailing dot in hostname or excluded
+  assert.equal(isSiteExcluded("example.com.", ["example.com"]), true);
+  assert.equal(isSiteExcluded("example.com", ["example.com."]), true);
 });

@@ -123,6 +123,9 @@ function stop() {
 async function refresh() {
   const settings = await loadSettings();
   stop();
+  if (isSiteExcluded(location.hostname, settings.excludedSites)) {
+    return;
+  }
   regexChunks = buildRegexChunks(settings.companies);
   applyColor(settings.color);
   if (settings.enabled && regexChunks.length > 0) {
@@ -132,7 +135,7 @@ async function refresh() {
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return;
-  if (changes.companies || changes.enabled) {
+  if (changes.companies || changes.enabled || changes.excludedSites) {
     refresh();
   } else if (changes.color) {
     applyColor(changes.color.newValue);
