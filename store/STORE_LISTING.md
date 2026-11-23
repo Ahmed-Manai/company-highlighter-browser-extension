@@ -20,6 +20,7 @@ FEATURES
 • Keeps up with infinite scroll and single-page apps
 • Match count on the toolbar icon
 • Choose your highlight colour, switch it on or off in one click
+• Turn highlighting off on the sites you choose
 • Handles lists with thousands of names
 
 PRIVACY

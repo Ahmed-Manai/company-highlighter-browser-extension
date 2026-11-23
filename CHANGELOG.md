@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0
+
+### Added
+- Excluded sites: list the sites where highlighting should stay off. Subdomains are covered too, and you can paste full URLs. Thanks @Joffy-Maria (#4).
+- A **Clear list** button on the settings page, with a confirmation step. Thanks @NikhilForge (#5).
+
 ## 1.0.0
 
 ### Added

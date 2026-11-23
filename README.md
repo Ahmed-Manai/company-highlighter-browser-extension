@@ -24,6 +24,7 @@ Useful when scanning job boards, LinkedIn feeds, news or search results for the 
 - **Your list, in the browser:** paste names, or import and export a `.txt` file, from the settings page. No files to edit.
 - **Toolbar popup and badge:** turn highlighting on or off, and see how many matches the current page has.
 - **Your colour:** pick any highlight colour.
+- **Excluded sites:** keep highlighting off on the sites you choose, including their subdomains.
 - **Smart matching:** case-insensitive and whole-name only (`Acme` does not match `Acmeish`). Names with symbols such as `AT&T` or `C++` work, and the longest name wins when entries overlap (`Acme Labs` over `Acme`).
 - **Dynamic pages:** keeps up with infinite scroll and single-page apps.
 - **Large lists:** names are compiled into a few regular expressions (500 names each) instead of being checked one by one.
@@ -49,9 +50,10 @@ A ready-to-install zip is attached to each [release](https://github.com/Ahmed-Ma
 
 ## Usage
 
-1. After installing, the settings page opens. Add one company per line and click **Save**, or click **Import .txt** to load a list ([`companies.example.txt`](companies.example.txt) is a sample).
+1. After installing, the settings page opens. Add one company per line and click **Save**, or click **Import .txt** to load a list ([`companies.example.txt`](companies.example.txt) is a sample). The **Clear list** button empties the list after asking you to confirm.
 2. Browse as usual: matches are highlighted and counted on the toolbar badge.
 3. Click the toolbar icon to switch highlighting off or on, or to open the settings again.
+4. To keep highlighting off on some sites, add them under **Excluded sites** in the settings, one per line, and click **Save excluded sites**.
 
 Changes apply to open tabs immediately; no reload needed.
 
